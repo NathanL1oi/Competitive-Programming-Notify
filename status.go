@@ -56,6 +56,7 @@ type statusContest struct {
 	Name  string `json:"name"`
 	Place int    `json:"place,omitempty"`
 	Time  int64  `json:"time,omitempty"`
+	URL   string `json:"url,omitempty"` // 比赛页面链接(v3.2 新增;旧数据没有时 QML 端禁用点击)
 }
 
 // statusAccount 是 status.json 中单个账号的完整展示数据
@@ -227,6 +228,7 @@ func acHistoryToInfo(hist []acHistoryEntry) *accountInfo {
 		Name:  name,
 		Place: last.Place,
 		Time:  parseACTime(last.EndTime),
+		URL:   acContestURL(last.ContestScreenName),
 	}
 	return info
 }
@@ -344,6 +346,25 @@ func acSubmissionURL(contestID string, subID int64) string {
 		return ""
 	}
 	return fmt.Sprintf("https://atcoder.jp/contests/%s/submissions/%d", contestID, subID)
+}
+
+// cfContestURL 生成 CF 比赛页面链接(user.rating 只含 rated 常规比赛,无 gym)
+func cfContestURL(contestID int64) string {
+	if contestID <= 0 {
+		return ""
+	}
+	return fmt.Sprintf("https://codeforces.com/contest/%d", contestID)
+}
+
+// acContestURL 生成 AtCoder 比赛页面链接。
+// history/json 的 ContestScreenName 是完整虚拟主机名(如 "abc471.contest.atcoder.jp"),
+// 比赛 slug 需剥掉 ".contest.atcoder.jp" 后缀;旧式数据本身可能就是 slug,剥不动则原样用。
+func acContestURL(screenName string) string {
+	slug := strings.TrimSuffix(screenName, ".contest.atcoder.jp")
+	if slug == "" {
+		return ""
+	}
+	return "https://atcoder.jp/contests/" + slug
 }
 
 func cfToLastSub(s cfSub) *lastSubRecord {

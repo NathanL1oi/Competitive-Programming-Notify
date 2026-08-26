@@ -284,6 +284,7 @@ func checkCFRatings(handles []string, multi bool, st *appState, n sender, cfg *c
 			Name:  latest.ContestName,
 			Place: latest.Rank,
 			Time:  latest.RatingUpdateTimeSeconds,
+			URL:   cfContestURL(latest.ContestID),
 		}
 		// 首次检查: 静默记录当前最新一条,后续只通知新变化
 		if acc.LastRatingTS == 0 {

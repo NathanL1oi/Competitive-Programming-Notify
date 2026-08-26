@@ -177,14 +177,20 @@ func TestRatingFlow(t *testing.T) {
 	// 首次检查: 静默记录最新 rating,不通知
 	fetchCodeforcesRating = func(string, *config) ([]ratingChange, error) {
 		return []ratingChange{
-			{ContestName: "Round #1", RatingUpdateTimeSeconds: 1000, OldRating: 1400, NewRating: 1522, Rank: 120},
-			{ContestName: "Round #2", RatingUpdateTimeSeconds: 2000, OldRating: 1522, NewRating: 1473, Rank: 800},
+			{ContestID: 1111, ContestName: "Round #1", RatingUpdateTimeSeconds: 1000, OldRating: 1400, NewRating: 1522, Rank: 120},
+			{ContestID: 1112, ContestName: "Round #2", RatingUpdateTimeSeconds: 2000, OldRating: 1522, NewRating: 1473, Rank: 800},
 		}, nil
 	}
 	pollCodeforces([]string{"tourist"}, st, n, cfg, sp, false)
 	acc := st.Codeforces.Accounts["tourist"]
 	if acc.LastRatingTS != 2000 {
 		t.Fatalf("首次检查应静默记录最新 rating 时间,实际 %d", acc.LastRatingTS)
+	}
+	// 状态栏卡片: 最近比赛(取时间最新一条)含比赛页面链接
+	if acc.info == nil || acc.info.LastContest == nil ||
+		acc.info.LastContest.Name != "Round #2" ||
+		acc.info.LastContest.URL != "https://codeforces.com/contest/1112" {
+		t.Fatalf("最近比赛快照: %+v", acc.info.LastContest)
 	}
 	if len(n.msgs) != 0 {
 		t.Fatalf("首次 rating 检查应静默: %+v", n.msgs)

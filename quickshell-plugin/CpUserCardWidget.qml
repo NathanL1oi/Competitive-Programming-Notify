@@ -515,25 +515,92 @@ PluginComponent {
                                 color: Theme.surfaceVariantText
                             }
 
-                            // 最近比赛
-                            StyledText {
+                            // 最近比赛(卡片式,与最近提交条目同一表面层级:
+                            // 左竖条 + 奖杯图标 + 比赛名/副行;点击打开比赛页面。
+                            // 旧版守护进程没有 url 字段时禁用点击,样式保持)
+                            StyledRect {
+                                id: contestCard
                                 visible: card.modelData.last_contest !== undefined && card.modelData.last_contest !== null
+                                readonly property var contest: card.modelData.last_contest || null
+                                readonly property string contestURL: contest && contest.url ? contest.url : ""
+
                                 width: parent.width
-                                elide: Text.ElideRight
-                                maximumLineCount: 1
-                                text: {
-                                    const c = card.modelData.last_contest;
-                                    if (!c)
-                                        return "";
-                                    let t = "Last contest: " + c.name;
-                                    if (c.place)
-                                        t += " · rank " + c.place;
-                                    if (c.time)
-                                        t += " · " + root.timeAgo(c.time);
-                                    return t;
+                                height: contestRow.implicitHeight + Theme.spacingS * 2
+                                radius: Theme.cornerRadius / 2
+                                color: Theme.surfaceContainerHighest
+
+                                // 左侧点缀竖条(主题色)
+                                Rectangle {
+                                    anchors.left: parent.left
+                                    anchors.top: parent.top
+                                    anchors.bottom: parent.bottom
+                                    anchors.leftMargin: 4
+                                    anchors.topMargin: 5
+                                    anchors.bottomMargin: 5
+                                    width: 3
+                                    radius: 1.5
+                                    color: Theme.primary
                                 }
-                                font.pixelSize: Theme.fontSizeSmall
-                                color: Theme.surfaceVariantText
+
+                                Row {
+                                    id: contestRow
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    anchors.leftMargin: 14
+                                    anchors.rightMargin: Theme.spacingS
+                                    spacing: Theme.spacingS
+
+                                    DankIcon {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        name: "emoji_events"
+                                        size: 16
+                                        color: Theme.primary
+                                    }
+
+                                    Column {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: contestRow.width - 16 - contestRow.spacing
+                                        spacing: 1
+
+                                        StyledText {
+                                            width: parent.width
+                                            elide: Text.ElideRight
+                                            maximumLineCount: 1
+                                            text: contestCard.contest ? (contestCard.contest.name || "") : ""
+                                            font.pixelSize: Theme.fontSizeSmall
+                                            font.weight: Font.Medium
+                                            color: Theme.surfaceText
+                                        }
+                                        StyledText {
+                                            width: parent.width
+                                            elide: Text.ElideRight
+                                            maximumLineCount: 1
+                                            text: {
+                                                const c = contestCard.contest;
+                                                if (!c)
+                                                    return "";
+                                                const parts = [];
+                                                if (c.place)
+                                                    parts.push("rank " + c.place);
+                                                if (c.time)
+                                                    parts.push(root.timeAgo(c.time));
+                                                return parts.join(" · ");
+                                            }
+                                            font.pixelSize: Theme.fontSizeSmall - 1
+                                            color: Theme.surfaceVariantText
+                                        }
+                                    }
+                                }
+
+                                StateLayer {
+                                    stateColor: Theme.surfaceText
+                                    disabled: contestCard.contestURL === ""
+                                    onClicked: {
+                                        if (contestCard.contestURL !== "")
+                                            Qt.openUrlExternally(contestCard.contestURL);
+                                    }
+                                }
                             }
 
                             // 最近提交(卡片式列表: 判定徽标 + 题目 + 详情,点击打开提交页)
@@ -680,29 +747,73 @@ PluginComponent {
                     }
                 }
 
-                // 页面指示器: 小圆点(仅多账号显示),高亮当前页,点击直接跳页
+                // 翻页控件行(仅多账号显示): 左翻页键 - 圆点组 - 右翻页键;
+                // 首页禁用左键、末页禁用右键(降透明度),圆点点击热区向外扩 8px
                 Row {
                     visible: root.accounts.length > 1
                     anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: Theme.spacingXS
+                    spacing: Theme.spacingS
 
-                    Repeater {
-                        model: root.accounts.length
+                    DankActionButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        buttonSize: 28
+                        iconSize: 16
+                        iconName: "chevron_left"
+                        iconColor: Theme.primary
+                        enabled: accountPager.currentIndex > 0
+                        opacity: enabled ? 1.0 : 0.35
+                        onClicked: {
+                            const target = accountPager.currentIndex - 1;
+                            if (target >= 0) {
+                                root.savedPage = target;
+                                accountPager.currentIndex = target;
+                            }
+                        }
+                    }
 
-                        delegate: Rectangle {
-                            required property int index
-                            width: 6
-                            height: 6
-                            radius: 3
-                            color: accountPager.currentIndex === index ? Theme.primary : Theme.withAlpha(Theme.surfaceVariantText, 0.35)
+                    // 页面指示器小圆点: 高亮当前页,点击直接跳页
+                    Row {
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: Theme.spacingXS
 
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    root.savedPage = index;
-                                    accountPager.currentIndex = index;
+                        Repeater {
+                            model: root.accounts.length
+
+                            delegate: Rectangle {
+                                required property int index
+                                width: 6
+                                height: 6
+                                radius: 3
+                                color: accountPager.currentIndex === index ? Theme.primary : Theme.withAlpha(Theme.surfaceVariantText, 0.35)
+
+                                MouseArea {
+                                    anchors.centerIn: parent
+                                    // 热区向四周外延 8px(圆点仅 6px,直接点很难命中)
+                                    width: parent.width + 16
+                                    height: parent.height + 16
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        root.savedPage = index;
+                                        accountPager.currentIndex = index;
+                                    }
                                 }
+                            }
+                        }
+                    }
+
+                    DankActionButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        buttonSize: 28
+                        iconSize: 16
+                        iconName: "chevron_right"
+                        iconColor: Theme.primary
+                        enabled: accountPager.currentIndex < accountPager.count - 1
+                        opacity: enabled ? 1.0 : 0.35
+                        onClicked: {
+                            const target = accountPager.currentIndex + 1;
+                            if (target < accountPager.count) {
+                                root.savedPage = target;
+                                accountPager.currentIndex = target;
                             }
                         }
                     }

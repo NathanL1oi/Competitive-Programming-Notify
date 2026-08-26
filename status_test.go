@@ -127,7 +127,7 @@ func TestACHistoryToInfo(t *testing.T) {
 	hist := []acHistoryEntry{
 		{Place: 100, NewRating: 500, ContestName: "比赛A", EndTime: "2024-01-01T21:00:00+09:00"},
 		{Place: 3, NewRating: 1250, ContestNameEn: "Grand Contest", ContestName: "比赛B", EndTime: "2024-06-01T21:00:00+09:00"},
-		{Place: 50, NewRating: 1100, ContestName: "比赛C", EndTime: "2024-07-01T21:00:00+09:00"},
+		{Place: 50, NewRating: 1100, ContestName: "比赛C", ContestScreenName: "abc999.contest.atcoder.jp", EndTime: "2024-07-01T21:00:00+09:00"},
 	}
 	info = acHistoryToInfo(hist)
 	if info.Rating == nil || *info.Rating != 1100 {
@@ -144,6 +144,9 @@ func TestACHistoryToInfo(t *testing.T) {
 	}
 	if info.LastContest == nil || info.LastContest.Name != "比赛C" || info.LastContest.Place != 50 {
 		t.Fatalf("最近比赛: %+v", info.LastContest)
+	}
+	if info.LastContest.URL != "https://atcoder.jp/contests/abc999" {
+		t.Fatalf("最近比赛链接: %q", info.LastContest.URL)
 	}
 	if info.LastContest.Time != time.Date(2024, 7, 1, 21, 0, 0, 0, time.FixedZone("JST", 9*3600)).Unix() {
 		t.Fatalf("比赛时间解析: %d", info.LastContest.Time)
@@ -346,7 +349,7 @@ func TestWriteStatus(t *testing.T) {
 		Fetched: true, Rating: iptr(3530), MaxRating: iptr(4009),
 		Rank: "legendary grandmaster", RankColor: "#FF0000", MaxRankColor: "#FF0000",
 		Avatar: "https://img/t.jpg", Contribution: iptr(109), FriendOf: iptr(90319),
-		LastContest: &statusContest{Name: "CF Round 1000", Place: 1, Time: 1720000000},
+		LastContest: &statusContest{Name: "CF Round 1000", Place: 1, Time: 1720000000, URL: "https://codeforces.com/contest/1000"},
 	}
 	cfAcc.LastSub = &lastSubRecord{ID: 100, Problem: "1234A. Test", Lang: "C++17", Verdict: "OK", Time: 1720000100}
 	cfAcc.Pending["101"] = subInfo{Problem: "x"}
@@ -369,6 +372,7 @@ func TestWriteStatus(t *testing.T) {
 		a.Rating == nil || *a.Rating != 3530 || a.RankColor != "#FF0000" ||
 		a.MaxRankColor != "#FF0000" ||
 		a.LastContest == nil || a.LastContest.Place != 1 ||
+		a.LastContest.URL != "https://codeforces.com/contest/1000" ||
 		a.LastSubmission == nil || a.LastSubmission.Verdict != "OK" || a.Pending != 1 ||
 		a.ProfileURL != "https://codeforces.com/profile/tourist" {
 		t.Fatalf("CF 账号条目: %+v", a)
@@ -473,6 +477,25 @@ func TestSubmissionURLs(t *testing.T) {
 	noContest := acSub{ID: 1, ProblemID: "x", Result: "AC"}
 	if got := acToLastSub(noContest).URL; got != "" {
 		t.Fatalf("缺 contest_id 时链接应为空,得到 %q", got)
+	}
+}
+
+// 比赛页面链接: CF 用 contestId,AC 用 ContestScreenName;缺失时为空串(QML 禁用点击)
+func TestContestURLs(t *testing.T) {
+	if got := cfContestURL(2254); got != "https://codeforces.com/contest/2254" {
+		t.Fatalf("CF 比赛链接: %s", got)
+	}
+	if got := cfContestURL(0); got != "" {
+		t.Fatalf("无 contestId 时链接应为空,得到 %q", got)
+	}
+	if got := acContestURL("abc327.contest.atcoder.jp"); got != "https://atcoder.jp/contests/abc327" {
+		t.Fatalf("AC 比赛链接(虚拟主机名应剥后缀): %s", got)
+	}
+	if got := acContestURL("ahc050"); got != "https://atcoder.jp/contests/ahc050" {
+		t.Fatalf("AC 比赛链接(已是 slug 应原样): %s", got)
+	}
+	if got := acContestURL(""); got != "" {
+		t.Fatalf("无 screen name 时链接应为空,得到 %q", got)
 	}
 }
 
