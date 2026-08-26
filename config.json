@@ -1,0 +1,11 @@
+{
+  "codeforces_handles": ["Nathan.Li","NathanL1"],
+  "atcoder_handles": ["NathanL1"],
+  "codeforces_api_key": "",
+  "codeforces_api_secret": "",
+  "poll_interval_idle": 15,
+  "poll_interval_active": 3,
+  "rating_check_interval": 300,
+  "userinfo_interval": 300,
+  "critical_on_fail": true
+}

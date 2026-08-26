@@ -1,0 +1,6 @@
+# 构建产物(静态二进制,通过 ./build.sh 重新生成;发布走 GitHub Releases)
+/cp-notifier
+
+# Python 缓存
+__pycache__/
+*.pyc

@@ -1,0 +1,16 @@
+{
+    "id": "cpUserCard",
+    "name": "CP User Card",
+    "description": "在 DankBar 显示 Codeforces / AtCoder rating,点击弹出用户信息卡片(数据来自 cp-notifier 服务)",
+    "version": "1.0.0",
+    "author": "nathan",
+    "type": "widget",
+    "capabilities": ["dankbar-widget"],
+    "component": "./CpUserCardWidget.qml",
+    "icon": "code",
+    "settings": "./CpUserCardSettings.qml",
+    "permissions": [
+        "settings_read",
+        "settings_write"
+    ]
+}

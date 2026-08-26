@@ -1,0 +1,19 @@
+[Unit]
+Description=Competitive Programming submission notifier (Codeforces / AtCoder)
+Documentation=https://github.com/nathan/competitive-programming-notifier
+# 本机的通知守护进程是 DMS(dms.service 持有 org.freedesktop.Notifications)。
+# 它 Type=dbus,After= 会等到 D-Bus 服务名被占用后才启动本服务,避免开机时通知被丢弃。
+Wants=dms.service
+After=dms.service
+
+[Service]
+Type=simple
+# 用户级 systemd 服务默认没有 DBus 会话地址,必须显式指定,
+# 否则 notify-send 找不到通知守护进程(DMS/mako/dunst)。
+Environment="DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/%U/bus"
+ExecStart=%h/.local/bin/cp-notifier
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
